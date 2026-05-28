@@ -137,21 +137,39 @@ export function decodeScore(encoded: number): { score: number; questions: number
 
 export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> {
   const fromBlock = await getFromBlockForWindow(windowSeconds);
-  const logs = await publicClient.getLogs({
+  const eventAbi = {
+  type: "event",
+  name: "ScoreSubmitted",
+  inputs: [
+    { indexed: true, name: "player", type: "address" },
+    { indexed: false, name: "discord", type: "string" },
+    { indexed: false, name: "score", type: "uint256" },
+    { indexed: false, name: "timestamp", type: "uint256" },
+  ],
+} as const;
+
+const CHUNK_SIZE = 90000n;
+const latestBlock = await publicClient.getBlockNumber();
+let currentBlock = fromBlock;
+const allLogs: any[] = [];
+
+while (currentBlock <= latestBlock) {
+  const toBlock = currentBlock + CHUNK_SIZE - 1n < latestBlock
+    ? currentBlock + CHUNK_SIZE - 1n
+    : latestBlock;
+
+  const chunk = await publicClient.getLogs({
     address: CONTRACT_ADDRESS,
-    event: {
-      type: "event",
-      name: "ScoreSubmitted",
-      inputs: [
-        { indexed: true, name: "player", type: "address" },
-        { indexed: false, name: "discord", type: "string" },
-        { indexed: false, name: "score", type: "uint256" },
-        { indexed: false, name: "timestamp", type: "uint256" },
-      ],
-    },
-    fromBlock,
-    toBlock: "latest",
+    event: eventAbi,
+    fromBlock: currentBlock,
+    toBlock,
   });
+
+  allLogs.push(...chunk);
+  currentBlock = toBlock + 1n;
+}
+
+const logs = allLogs;
   const windowCutoff = Math.floor(Date.now() / 1000) - windowSeconds;
   const cutoff = Math.max(windowCutoff, LEADERBOARD_RESET_AT);
   const all: ScoreEntry[] = logs.map((l) => {
