@@ -159,7 +159,7 @@ export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> 
 }
 
 console.log("Total logs found:", allLogs.length);
-console.log("Raw logs:", JSON.stringify(allLogs));
+console.log("Raw logs:", allLogs.length, allLogs.map(l => l.transactionHash));
 
   const windowCutoff = Math.floor(Date.now() / 1000) - windowSeconds;
   const cutoff = LEADERBOARD_RESET_AT > 0 ? Math.max(windowCutoff, LEADERBOARD_RESET_AT) : windowCutoff;
