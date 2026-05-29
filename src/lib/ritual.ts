@@ -1,4 +1,4 @@
-import { createPublicClient, createWalletClient, custom, http, defineChain, parseEther, formatEther, decodeEventLog, type Address } from "viem";
+import { createPublicClient, createWalletClient, custom, http, defineChain, parseEther, formatEther, decodeAbiParameters, type Address } from "viem";
 
 export const RITUAL_CHAIN = defineChain({
   id: 1979,
@@ -114,9 +114,6 @@ export type ScoreEntry = {
   txHash: string;
 };
 
-async function getFromBlockForWindow(_seconds: number): Promise<bigint> {
-  return DEPLOY_BLOCK;
-}
 
 export function encodeScore(realScore: number, questions: number): bigint {
   const q = Math.max(0, Math.min(MAX_QUESTIONS_ENCODE, Math.floor(questions)));
@@ -131,62 +128,61 @@ export function decodeScore(encoded: number): { score: number; questions: number
 }
 
 export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> {
-  const fromBlock = await getFromBlockForWindow(windowSeconds);
-  const eventAbi = {
-  type: "event",
-  name: "ScoreSubmitted",
-  inputs: [
-    { indexed: true, name: "player", type: "address" },
-    { indexed: false, name: "discord", type: "string" },
-    { indexed: false, name: "score", type: "uint256" },
-    { indexed: false, name: "timestamp", type: "uint256" },
-  ],
-} as const;
+  const CHUNK_SIZE = 90000n;
+  const latestBlock = await publicClient.getBlockNumber();
+  let currentBlock = DEPLOY_BLOCK;
+  const allLogs: any[] = [];
 
-const CHUNK_SIZE = 90000n;
-const latestBlock = await publicClient.getBlockNumber();
-let currentBlock = fromBlock;
-const allLogs: any[] = [];
+  while (currentBlock <= latestBlock) {
+    const toBlock = currentBlock + CHUNK_SIZE - 1n < latestBlock
+      ? currentBlock + CHUNK_SIZE - 1n
+      : latestBlock;
 
-while (currentBlock <= latestBlock) {
-  const toBlock = currentBlock + CHUNK_SIZE - 1n < latestBlock
-    ? currentBlock + CHUNK_SIZE - 1n
-    : latestBlock;
+    const chunk = await publicClient.getLogs({
+      address: CONTRACT_ADDRESS,
+      fromBlock: currentBlock,
+      toBlock,
+      topics: ["0xf37ae49b60d757d76834b35373affa2ee41ac05f1a40e6731d9328f70199881d"],
+    });
 
-  const chunk = await publicClient.getLogs({
-    address: CONTRACT_ADDRESS,
-    event: eventAbi,
-    fromBlock: currentBlock,
-    toBlock,
-  });
+    allLogs.push(...chunk);
+    currentBlock = toBlock + 1n;
+  }
 
-  allLogs.push(...chunk);
-  currentBlock = toBlock + 1n;
-}
-
-const logs = allLogs;
   const windowCutoff = Math.floor(Date.now() / 1000) - windowSeconds;
-  const cutoff = Math.max(windowCutoff, LEADERBOARD_RESET_AT);
-  const all: ScoreEntry[] = logs.map((l) => {
-    const args = l.args as any;
-    const encoded = Number(args.score);
-    const { score, questions } = decodeScore(encoded);
-    return {
-      player: args.player as string,
-      discord: args.discord as string,
-      score,
-      questions,
-      timestamp: Number(args.timestamp),
-      txHash: l.transactionHash!,
-    };
-  }).filter((e) => e.timestamp >= cutoff);
+  const cutoff = LEADERBOARD_RESET_AT > 0 ? Math.max(windowCutoff, LEADERBOARD_RESET_AT) : windowCutoff;
 
-  all.sort((a, b) => a.timestamp - b.timestamp);
+  const all: ScoreEntry[] = allLogs.map((l) => {
+    try {
+      const player = "0x" + l.topics[1].slice(26);
+      const decoded = decodeAbiParameters(
+        [
+          { name: "discord", type: "string" },
+          { name: "score", type: "uint256" },
+          { name: "timestamp", type: "uint256" },
+        ],
+        l.data
+      );
+      const encoded = Number(decoded[1]);
+      const { score, questions } = decodeScore(encoded);
+      return {
+        player,
+        discord: decoded[0] as string,
+        score,
+        questions,
+        timestamp: Number(decoded[2]),
+        txHash: l.transactionHash!,
+      };
+    } catch {
+      return null;
+    }
+  }).filter(Boolean) as ScoreEntry[];
+
+  const filtered = all.filter((e) => e.timestamp >= cutoff);
+  filtered.sort((a, b) => a.timestamp - b.timestamp);
   const map = new Map<string, ScoreEntry>();
-  for (const e of all) {
+  for (const e of filtered) {
     map.set(e.discord.toLowerCase(), e);
   }
   return [...map.values()].sort((a, b) => b.score - a.score).slice(0, 50);
 }
-
-export { formatEther, parseEther };
