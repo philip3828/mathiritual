@@ -1,4 +1,4 @@
-import { createPublicClient, createWalletClient, custom, http, defineChain, parseEther, formatEther, decodeAbiParameters, type Address } from "viem";
+import { createPublicClient, createWalletClient, custom, http, defineChain, parseEther, formatEther, type Address } from "viem";
 
 export const RITUAL_CHAIN = defineChain({
   id: 1979,
