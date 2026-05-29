@@ -148,6 +148,7 @@ export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> 
           topics: ["0xf37ae49b60d757d76834b35373affa2ee41ac05f1a40e6731d9328f70199881d"],
         }] as any,
       }) as any[];
+      console.log("chunk size:", chunk.length);
       allLogs.push(...chunk);
     } catch {
       // skip failed chunk
