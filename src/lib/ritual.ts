@@ -128,7 +128,7 @@ export function decodeScore(encoded: number): { score: number; questions: number
 }
 
 export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> {
-  const CHUNK_SIZE = 99999n;
+  const CHUNK_SIZE = 50000n;
   const latestBlock = await publicClient.getBlockNumber();
   let currentBlock = DEPLOY_BLOCK;
   const allLogs: any[] = [];
@@ -155,8 +155,8 @@ export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> 
         } as const,
       });
       allLogs.push(...chunk);
-    } catch {
-      // skip failed chunk
+    } catch (e: any) {
+      throw new Error(e?.message ?? "Failed to fetch logs");
     }
 
     currentBlock = toBlock + 1n;
