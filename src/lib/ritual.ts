@@ -173,7 +173,8 @@ export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> 
         timestamp: Number(decoded[2]),
         txHash: l.transactionHash!,
       };
-    } catch {
+    } catch (e) {
+      console.error("Failed to decode log:", e, l);
       return null;
     }
   }).filter(Boolean) as ScoreEntry[];
