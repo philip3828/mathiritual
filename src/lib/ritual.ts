@@ -146,8 +146,11 @@ export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> 
     });
 
     allLogs.push(...chunk);
-    currentBlock = toBlock + 1n;
-  }
+  currentBlock = toBlock + 1n;
+}
+
+console.log("Total logs found:", allLogs.length);
+console.log("Raw logs:", JSON.stringify(allLogs));
 
   const windowCutoff = Math.floor(Date.now() / 1000) - windowSeconds;
   const cutoff = LEADERBOARD_RESET_AT > 0 ? Math.max(windowCutoff, LEADERBOARD_RESET_AT) : windowCutoff;
