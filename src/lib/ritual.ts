@@ -128,25 +128,39 @@ export function decodeScore(encoded: number): { score: number; questions: number
 }
 
 export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> {
+  const CHUNK_SIZE = 99999n;
   const latestBlock = await publicClient.getBlockNumber();
+  let currentBlock = DEPLOY_BLOCK;
   const allLogs: any[] = [];
 
-  const logs = await publicClient.getLogs({
-    address: CONTRACT_ADDRESS,
-    fromBlock: DEPLOY_BLOCK,
-    toBlock: latestBlock,
-    event: {
-      type: "event",
-      name: "ScoreSubmitted",
-      inputs: [
-        { indexed: true, name: "player", type: "address" },
-        { indexed: false, name: "discord", type: "string" },
-        { indexed: false, name: "score", type: "uint256" },
-        { indexed: false, name: "timestamp", type: "uint256" },
-      ],
-    } as const,
-  });
-  allLogs.push(...logs);
+  while (currentBlock <= latestBlock) {
+    const toBlock = currentBlock + CHUNK_SIZE - 1n < latestBlock
+      ? currentBlock + CHUNK_SIZE - 1n
+      : latestBlock;
+
+    try {
+      const chunk = await publicClient.getLogs({
+        address: CONTRACT_ADDRESS,
+        fromBlock: currentBlock,
+        toBlock,
+        event: {
+          type: "event",
+          name: "ScoreSubmitted",
+          inputs: [
+            { indexed: true, name: "player", type: "address" },
+            { indexed: false, name: "discord", type: "string" },
+            { indexed: false, name: "score", type: "uint256" },
+            { indexed: false, name: "timestamp", type: "uint256" },
+          ],
+        } as const,
+      });
+      allLogs.push(...chunk);
+    } catch {
+      // skip failed chunk
+    }
+
+    currentBlock = toBlock + 1n;
+  }
 
   const all: ScoreEntry[] = allLogs.map((l) => {
     try {
