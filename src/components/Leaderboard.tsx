@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fetchScores, type ScoreEntry } from "@/lib/ritual";
 
 type Window = "daily" | "weekly";
@@ -9,13 +9,27 @@ export function Leaderboard() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
+  const cache = useRef<Record<string, ScoreEntry[]>>({});
+
   useEffect(() => {
     let cancelled = false;
+    const seconds = tab === "daily" ? 86400 : 86400 * 7;
+
+    if (cache.current[tab]) {
+      setRows(cache.current[tab]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setErr(null);
-    const seconds = tab === "daily" ? 86400 : 86400 * 7;
     fetchScores(seconds)
-      .then((r) => { if (!cancelled) setRows(r); })
+      .then((r) => {
+        if (!cancelled) {
+          cache.current[tab] = r;
+          setRows(r);
+        }
+      })
       .catch((e) => { if (!cancelled) setErr(e?.message ?? "Failed to load"); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
