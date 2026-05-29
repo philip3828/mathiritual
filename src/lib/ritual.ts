@@ -114,13 +114,8 @@ export type ScoreEntry = {
   txHash: string;
 };
 
-const RITUAL_AVG_BLOCK_SEC = 2; // approximate
-
-async function getFromBlockForWindow(seconds: number): Promise<bigint> {
-  const latest = await publicClient.getBlockNumber();
-  const back = BigInt(Math.ceil(seconds / RITUAL_AVG_BLOCK_SEC));
-  const candidate = latest > back ? latest - back : 0n;
-  return candidate < DEPLOY_BLOCK ? DEPLOY_BLOCK : candidate;
+async function getFromBlockForWindow(_seconds: number): Promise<bigint> {
+  return DEPLOY_BLOCK;
 }
 
 export function encodeScore(realScore: number, questions: number): bigint {
