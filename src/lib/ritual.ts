@@ -8,7 +8,7 @@ export const RITUAL_CHAIN = defineChain({
   blockExplorers: { default: { name: "Explorer", url: "https://explorer.ritualfoundation.org/" } },
 });
 
-export const CONTRACT_ADDRESS = "0x205336D124145881e00dad29aAA9669F739684B2" as const;
+export const CONTRACT_ADDRESS = "0x205336d124145881e00dad29aaa9669f739684b2" as const;
 export const DEPLOY_BLOCK = 25288000n;
 // Leaderboard reset: only events at or after this Unix timestamp are shown.
 // Bump this to wipe the visible leaderboard without redeploying.
