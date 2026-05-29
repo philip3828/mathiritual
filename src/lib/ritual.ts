@@ -128,35 +128,17 @@ export function decodeScore(encoded: number): { score: number; questions: number
 }
 
 export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> {
-  const CHUNK_SIZE = 50000n;
   const latestBlock = await publicClient.getBlockNumber();
   let currentBlock = DEPLOY_BLOCK;
   const allLogs: any[] = [];
 
-  while (currentBlock <= latestBlock) {
-    const toBlock = currentBlock + CHUNK_SIZE - 1n < latestBlock
-      ? currentBlock + CHUNK_SIZE - 1n
-      : latestBlock;
-
-    let chunk: any[] = [];
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        chunk = await publicClient.getLogs({
-          address: CONTRACT_ADDRESS,
-          fromBlock: currentBlock,
-          toBlock,
-          topics: ["0xf37ae49b60d757d76834b35373affa2ee41ac05f1a40e6731d9328f70199881d"],
-        });
-        break;
-      } catch {
-        if (attempt === 2) break;
-        await new Promise((r) => setTimeout(r, 1000));
-      }
-    }
-
-    allLogs.push(...chunk);
-    currentBlock = toBlock + 1n;
-  }
+  const logs = await publicClient.getLogs({
+    address: CONTRACT_ADDRESS,
+    fromBlock: DEPLOY_BLOCK,
+    toBlock: latestBlock,
+    topics: ["0xf37ae49b60d757d76834b35373affa2ee41ac05f1a40e6731d9328f70199881d"],
+  });
+  allLogs.push(...logs);
 
   const all: ScoreEntry[] = allLogs.map((l) => {
     try {
