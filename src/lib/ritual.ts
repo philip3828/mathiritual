@@ -155,30 +155,26 @@ export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> 
     });
 
     allLogs.push(...chunk);
-  currentBlock = toBlock + 1n;
-}
-
-console.log("Total logs found:", allLogs.length);
-console.log("Raw logs:", allLogs.length, allLogs.map(l => l.transactionHash));
+    currentBlock = toBlock + 1n;
+  }
 
   const windowCutoff = Math.floor(Date.now() / 1000) - windowSeconds;
   const cutoff = LEADERBOARD_RESET_AT > 0 ? Math.max(windowCutoff, LEADERBOARD_RESET_AT) : windowCutoff;
 
-    const all: ScoreEntry[] = allLogs.map((l) => {
+  const all: ScoreEntry[] = allLogs.map((l) => {
     try {
       const args = l.args as any;
-      const encoded = Number(args.score);
+      const encoded = Number(BigInt(args.score));
       const { score, questions } = decodeScore(encoded);
       return {
         player: args.player as string,
         discord: args.discord as string,
         score,
         questions,
-        timestamp: Number(args.timestamp),
+        timestamp: Number(BigInt(args.timestamp)),
         txHash: l.transactionHash!,
       };
     } catch (e) {
-      console.error("Failed to decode log:", e, l);
       return null;
     }
   }).filter(Boolean) as ScoreEntry[];
