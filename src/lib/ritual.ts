@@ -128,7 +128,7 @@ export function decodeScore(encoded: number): { score: number; questions: number
 }
 
 export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> {
-  const CHUNK_SIZE = 10000n;
+  const CHUNK_SIZE = 50000n;
   const latestBlock = await publicClient.getBlockNumber();
   let currentBlock = DEPLOY_BLOCK;
   const allLogs: any[] = [];
@@ -145,7 +145,7 @@ export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> 
           address: CONTRACT_ADDRESS,
           fromBlock: currentBlock,
           toBlock,
-          topics: [["0xf37ae49b60d757d76834b35373affa2ee41ac05f1a40e6731d9328f70199881d"]],
+          topics: ["0xf37ae49b60d757d76834b35373affa2ee41ac05f1a40e6731d9328f70199881d"],
         });
         break;
       } catch {
@@ -156,7 +156,6 @@ export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> 
 
     allLogs.push(...chunk);
     currentBlock = toBlock + 1n;
-    await new Promise((r) => setTimeout(r, 100));
   }
 
   const all: ScoreEntry[] = allLogs.map((l) => {
