@@ -158,7 +158,8 @@ export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> 
     currentBlock = toBlock + 1n;
   }
 
-  const windowCutoff = Math.floor(Date.now() / 1000) - windowSeconds;
+  const isWeekly = windowSeconds >= 86400 * 7;
+  const windowCutoff = isWeekly ? 0 : Math.floor(Date.now() / 1000) - windowSeconds;
   const cutoff = LEADERBOARD_RESET_AT > 0 ? Math.max(windowCutoff, LEADERBOARD_RESET_AT) : windowCutoff;
 
   const all: ScoreEntry[] = allLogs.map((l) => {
@@ -179,9 +180,9 @@ export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> 
     }
   }).filter(Boolean) as ScoreEntry[];
 
-  console.log("All decoded:", all.length, "cutoff:", cutoff, "samples:", all.slice(0,3).map(e => ({discord: e.discord, timestamp: e.timestamp})));
+  
   const filtered = all.filter((e) => e.timestamp >= cutoff);
-  console.log("Filtered:", filtered.length);
+  
   filtered.sort((a, b) => a.timestamp - b.timestamp);
   const map = new Map<string, ScoreEntry>();
   for (const e of filtered) {
