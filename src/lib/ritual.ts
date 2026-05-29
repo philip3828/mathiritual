@@ -1,4 +1,4 @@
-import { createPublicClient, createWalletClient, custom, http, defineChain, parseEther, formatEther, type Address } from "viem";
+import { createPublicClient, createWalletClient, custom, http, defineChain, parseEther, formatEther, decodeAbiParameters, type Address } from "viem";
 
 export const RITUAL_CHAIN = defineChain({
   id: 1979,
@@ -145,16 +145,7 @@ export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> 
           address: CONTRACT_ADDRESS,
           fromBlock: currentBlock,
           toBlock,
-          event: {
-            type: "event",
-            name: "ScoreSubmitted",
-            inputs: [
-              { indexed: true, name: "player", type: "address" },
-              { indexed: false, name: "discord", type: "string" },
-              { indexed: false, name: "score", type: "uint256" },
-              { indexed: false, name: "timestamp", type: "uint256" },
-            ],
-          } as const,
+          topics: [["0xf37ae49b60d757d76834b35373affa2ee41ac05f1a40e6731d9328f70199881d"]],
         });
         break;
       } catch {
@@ -170,15 +161,24 @@ export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> 
 
   const all: ScoreEntry[] = allLogs.map((l) => {
     try {
-      const args = l.args as any;
-      const encoded = Number(BigInt(args.score));
+      const player = ("0x" + l.topics[1].slice(26)) as string;
+      const data = l.data as `0x${string}`;
+      const decoded = decodeAbiParameters(
+        [
+          { name: "discord", type: "string" },
+          { name: "score", type: "uint256" },
+          { name: "timestamp", type: "uint256" },
+        ],
+        data
+      );
+      const encoded = Number(BigInt(decoded[1] as bigint));
       const { score, questions } = decodeScore(encoded);
       return {
-        player: args.player as string,
-        discord: args.discord as string,
+        player,
+        discord: decoded[0] as string,
         score,
         questions,
-        timestamp: Number(BigInt(args.timestamp)),
+        timestamp: Number(BigInt(decoded[2] as bigint)),
         txHash: l.transactionHash!,
       };
     } catch {
