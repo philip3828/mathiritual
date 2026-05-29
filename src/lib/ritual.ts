@@ -9,7 +9,7 @@ export const RITUAL_CHAIN = defineChain({
 });
 
 export const CONTRACT_ADDRESS = "0x205336D124145881e00dad29aAA9669F739684B2" as const;
-export const DEPLOY_BLOCK = 25286727n;
+export const DEPLOY_BLOCK = 25288000n;
 // Leaderboard reset: only events at or after this Unix timestamp are shown.
 // Bump this to wipe the visible leaderboard without redeploying.
 export const LEADERBOARD_RESET_AT = 0; // no reset
@@ -158,7 +158,7 @@ export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> 
         });
         break;
       } catch {
-        if (attempt === 2) throw new Error("RPC failed after 3 attempts");
+        if (attempt === 2) break;
         await new Promise((r) => setTimeout(r, 1000));
       }
     }
