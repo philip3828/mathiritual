@@ -1,4 +1,4 @@
-import { createPublicClient, createWalletClient, custom, http, defineChain, parseEther, formatEther, type Address } from "viem";
+import { createPublicClient, createWalletClient, custom, http, defineChain, parseEther, formatEther, decodeAbiParameters, type Address } from "viem";
 
 export const RITUAL_CHAIN = defineChain({
   id: 1979,
@@ -139,41 +139,44 @@ export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> 
       : latestBlock;
 
     try {
-      const chunk = await publicClient.getLogs({
-        address: CONTRACT_ADDRESS,
-        fromBlock: currentBlock,
-        toBlock,
-        event: {
-          type: "event",
-          name: "ScoreSubmitted",
-          inputs: [
-            { indexed: true, name: "player", type: "address" },
-            { indexed: false, name: "discord", type: "string" },
-            { indexed: false, name: "score", type: "uint256" },
-            { indexed: false, name: "timestamp", type: "uint256" },
-          ],
-        } as const,
-      });
+      const chunk = await publicClient.request({
+        method: "eth_getLogs" as any,
+        params: [{
+          address: CONTRACT_ADDRESS,
+          fromBlock: ("0x" + currentBlock.toString(16)) as `0x${string}`,
+          toBlock: ("0x" + toBlock.toString(16)) as `0x${string}`,
+          topics: ["0xf37ae49b60d757d76834b35373affa2ee41ac05f1a40e6731d9328f70199881d"],
+        }] as any,
+      }) as any[];
       allLogs.push(...chunk);
-    } catch (e: any) {
-      throw new Error(e?.message ?? "Failed to fetch logs");
+    } catch {
+      // skip failed chunk
     }
 
     currentBlock = toBlock + 1n;
   }
 
-  const all: ScoreEntry[] = allLogs.map((l) => {
+  const all: ScoreEntry[] = allLogs.map((l: any) => {
     try {
-      const args = l.args as any;
-      const encoded = Number(BigInt(args.score));
+      const player = ("0x" + l.topics[1].slice(26)) as string;
+      const data = l.data as `0x${string}`;
+      const decoded = decodeAbiParameters(
+        [
+          { name: "discord", type: "string" },
+          { name: "score", type: "uint256" },
+          { name: "timestamp", type: "uint256" },
+        ],
+        data
+      );
+      const encoded = Number(BigInt(decoded[1] as bigint));
       const { score, questions } = decodeScore(encoded);
       return {
-        player: args.player as string,
-        discord: args.discord as string,
+        player,
+        discord: decoded[0] as string,
         score,
         questions,
-        timestamp: Number(BigInt(args.timestamp)),
-        txHash: l.transactionHash!,
+        timestamp: Number(BigInt(decoded[2] as bigint)),
+        txHash: l.transactionHash as string,
       };
     } catch {
       return null;
