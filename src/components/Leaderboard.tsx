@@ -1,39 +1,30 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchScores, type ScoreEntry } from "@/lib/ritual";
 
 type Window = "daily" | "weekly";
 
 export function Leaderboard() {
   const [tab, setTab] = useState<Window>("daily");
-  const [rows, setRows] = useState<ScoreEntry[]>([]);
+  const [daily, setDaily] = useState<ScoreEntry[]>([]);
+  const [weekly, setWeekly] = useState<ScoreEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  const cache = useRef<Record<string, ScoreEntry[]>>({});
-
   useEffect(() => {
-    let cancelled = false;
-    const seconds = tab === "daily" ? 86400 : 86400 * 7;
-
-    if (cache.current[tab]) {
-      setRows(cache.current[tab]);
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
     setErr(null);
-    fetchScores(seconds)
-      .then((r) => {
-        if (!cancelled) {
-          cache.current[tab] = r;
-          setRows(r);
-        }
+    // fetch weekly only (it covers all scores ever), then filter daily from it
+    fetchScores(86400 * 7)
+      .then((all) => {
+        setWeekly(all);
+        const dailyCutoff = Math.floor(Date.now() / 1000) - 86400;
+        setDaily(all.filter((e) => e.timestamp >= dailyCutoff));
       })
-      .catch((e) => { if (!cancelled) setErr(e?.message ?? "Failed to load"); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [tab]);
+      .catch((e) => setErr(e?.message ?? "Failed to load"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const rows = tab === "daily" ? daily : weekly;
 
   return (
     <div className="rounded-2xl border border-ritual-line bg-ritual-card/60 p-5 backdrop-blur">
