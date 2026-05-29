@@ -142,7 +142,16 @@ export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> 
       address: CONTRACT_ADDRESS,
       fromBlock: currentBlock,
       toBlock,
-      topics: ["0xf37ae49b60d757d76834b35373affa2ee41ac05f1a40e6731d9328f70199881d"],
+      event: {
+        type: "event",
+        name: "ScoreSubmitted",
+        inputs: [
+          { indexed: true, name: "player", type: "address" },
+          { indexed: false, name: "discord", type: "string" },
+          { indexed: false, name: "score", type: "uint256" },
+          { indexed: false, name: "timestamp", type: "uint256" },
+        ],
+      } as const,
     });
 
     allLogs.push(...chunk);
@@ -155,25 +164,17 @@ console.log("Raw logs:", JSON.stringify(allLogs));
   const windowCutoff = Math.floor(Date.now() / 1000) - windowSeconds;
   const cutoff = LEADERBOARD_RESET_AT > 0 ? Math.max(windowCutoff, LEADERBOARD_RESET_AT) : windowCutoff;
 
-  const all: ScoreEntry[] = allLogs.map((l) => {
+    const all: ScoreEntry[] = allLogs.map((l) => {
     try {
-      const player = "0x" + l.topics[1].slice(26);
-      const decoded = decodeAbiParameters(
-        [
-          { name: "discord", type: "string" },
-          { name: "score", type: "uint256" },
-          { name: "timestamp", type: "uint256" },
-        ],
-        l.data
-      );
-      const encoded = Number(decoded[1]);
+      const args = l.args as any;
+      const encoded = Number(args.score);
       const { score, questions } = decodeScore(encoded);
       return {
-        player,
-        discord: decoded[0] as string,
+        player: args.player as string,
+        discord: args.discord as string,
         score,
         questions,
-        timestamp: Number(decoded[2]),
+        timestamp: Number(args.timestamp),
         txHash: l.transactionHash!,
       };
     } catch (e) {
