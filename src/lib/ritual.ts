@@ -179,7 +179,9 @@ export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> 
     }
   }).filter(Boolean) as ScoreEntry[];
 
+  console.log("All decoded:", all.length, "cutoff:", cutoff, "samples:", all.slice(0,3).map(e => ({discord: e.discord, timestamp: e.timestamp})));
   const filtered = all.filter((e) => e.timestamp >= cutoff);
+  console.log("Filtered:", filtered.length);
   filtered.sort((a, b) => a.timestamp - b.timestamp);
   const map = new Map<string, ScoreEntry>();
   for (const e of filtered) {
