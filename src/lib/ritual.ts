@@ -128,7 +128,7 @@ export function decodeScore(encoded: number): { score: number; questions: number
 }
 
 export async function fetchScores(windowSeconds: number): Promise<ScoreEntry[]> {
-const CHUNK_SIZE = 2000n;
+  const CHUNK_SIZE = 10000n;
   const latestBlock = await publicClient.getBlockNumber();
   let currentBlock = DEPLOY_BLOCK;
   const allLogs: any[] = [];
@@ -165,6 +165,7 @@ const CHUNK_SIZE = 2000n;
 
     allLogs.push(...chunk);
     currentBlock = toBlock + 1n;
+    await new Promise((r) => setTimeout(r, 100));
   }
 
   const all: ScoreEntry[] = allLogs.map((l) => {
