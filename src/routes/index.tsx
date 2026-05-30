@@ -61,7 +61,7 @@ function Index() {
             MATHIRITUAL
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-sm sm:text-base text-ritual-text/70 leading-relaxed">
-            Prove your compute. Answer arithmetic questions against a shrinking timer, build streaks, and commit your score on-chain as immutable proof-of-compute on Ritual Chain.
+            Answer arithmetic questions. Have fun.
           </p>
         </section>
 

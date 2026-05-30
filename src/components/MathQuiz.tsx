@@ -174,7 +174,7 @@ export function MathQuiz() {
   const timeColor = timePct > 50 ? "bg-ritual-accent" : timePct > 25 ? "bg-yellow-400" : "bg-red-400";
 
   return (
-    <div className="grid lg:grid-cols-[1fr_22rem] gap-6">
+    <div className="flex justify-center">
       <div className="rounded-2xl border border-ritual-line bg-ritual-card/70 p-6 backdrop-blur min-h-[28rem] flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -304,7 +304,7 @@ export function MathQuiz() {
 
             {phase === "saved" ? (
               <>
-                <p className="text-sm text-ritual-accent">Saved on-chain ✓ (overwrites your previous score)</p>
+                <p className="text-sm text-ritual-accent">Saved on-chain ✓</p>
                 {saveTx && (
                   <a
                     href={`https://explorer.ritualfoundation.org/tx/${saveTx}`}
