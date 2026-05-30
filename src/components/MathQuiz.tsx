@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { CONTRACT_ADDRESS, FEE_WEI, QUIZ_ABI, connectWallet, encodeScore, ensureRitualChain, getWalletClient, publicClient } from "@/lib/ritual";
 import { generateProblem, pointsForAnswer, type Problem } from "@/lib/quiz";
-import { Leaderboard } from "./Leaderboard";
 
 type Phase =
   | "idle"
@@ -343,9 +342,6 @@ export function MathQuiz() {
         {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
       </div>
 
-      <div key={reloadKey}>
-        <Leaderboard />
-      </div>
     </div>
   );
 }
