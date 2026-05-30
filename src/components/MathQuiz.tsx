@@ -203,12 +203,7 @@ export function MathQuiz() {
                 className="mt-1 w-full rounded-lg bg-ritual-deep border border-ritual-line px-3 py-2 text-ritual-text outline-none focus:border-ritual-accent"
               />
             </label>
-            <div className="text-sm text-ritual-text/70 leading-relaxed">
-              Pay a one-time <strong className="text-ritual-accent">0.0002 RITUAL</strong> fee to unlock your run.
-              After it confirms you'll hit <strong className="text-ritual-accent">Begin</strong> to start.
-              You start with <strong className="text-ritual-accent">20 seconds</strong> — the clock shrinks every 4 questions, floored at 6s.
-              Difficulty climbs through 10 tiers, scoring compounds with streaks and time bonuses.
-            </div>
+            
             <button
               onClick={handlePay}
               disabled={!address || !discord.trim()}
